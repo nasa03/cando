@@ -325,7 +325,7 @@
               instance
     (when (and angle index twister)
       (chem:twister-rotate-absolute twister (deg2rad angle))
-      (setf (ngl:positions index) (crd (gethash (ngl:name index) (structures instance)))))))
+      (ngl:update-position index (crd (gethash (ngl:name index) (structures instance)))))))
 
 
 (defun on-jostle-relax (instance jostle)
