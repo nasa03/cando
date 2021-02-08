@@ -38,6 +38,7 @@
     #:rotate-z
     #:run-task
     #:selected
+    #:selected-molecules
     #:show
     #:show-aggregate
     #:show-amber-netcdf-trajectory

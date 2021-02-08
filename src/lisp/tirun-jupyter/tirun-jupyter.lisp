@@ -718,9 +718,10 @@ It will put those multiple ligands into all-ligands and selected-ligands"
                                                      :min-height "480px"
                                                      :padding "0 24px 0 0"
                                                      :grid-gap "var(--jp-widgets-container-padding)"
-                                                     :grid-template-columns "1fr"
+                                                     :grid-template-columns "1fr 1fr min-content"
                                                      :grid-template-rows "1fr min-content"
-                                                     :grid-template-areas "'molecule-map-content' 'molecule-map-controls'")))
+                                                     :grid-template-areas "'molecule-map-content ngl-content ngl-vertical-toolbar'
+                                                                           'molecule-map-controls ngl-horizontal-toolbar .")))
          (molecule-map (cw:make-molecule-map grid
                                              :molecule-matcher #'match-ligands
                                              :edge-constructor (lambda (name1 name2)
@@ -729,7 +730,15 @@ It will put those multiple ligands into all-ligands and selected-ligands"
                                                                          :label (format nil "~@[S = ~3,2f~]"
                                                                                         (cdr (assoc (list name1 name2) (similarities *workspace*) :test #'equal))))))
                                              :molecules selected-ligands
-                                             :edges all-edges)))
+                                             :edges all-edges))
+         (ngl (cw:make-ngl-structure-viewer grid)))
+    (jw:observe molecule-map :selected-molecules
+      (lambda (inst type name old-value new-value source)
+        (declare (ignore inst type name old-value source))
+        (dolist (mol new-value)
+          (let ((agg (chem:make-aggregate (chem:get-name mol))))
+            (chem:add-matter agg mol)
+            (cw:add-ligand ngl (molecule-name mol) agg)))))
     (jw:link *workspace* :selected-ligands molecule-map :molecules)
     (jw:link *workspace* :all-edges molecule-map :edges)
     (cw:make-simple-task-page container "Calculate Similarities" #'run-lomap

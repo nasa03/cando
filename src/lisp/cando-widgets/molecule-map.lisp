@@ -136,6 +136,10 @@
      :initarg :molecules
      :initform nil
      :trait t)
+   (selected-molecules
+     :accessor selected-molecules
+     :initform nil
+     :trait t)
    (edges
      :accessor edges
      :initarg :edges
@@ -395,27 +399,28 @@
 
 
 (defun update-selected-sketches (map unselected-names)
-  (with-slots (molecule-matcher graph molecules)
+  (with-slots (molecule-matcher graph molecules selected-molecules)
               map
-    (when molecule-matcher
-      (let* ((selected-names (get-selected-names map))
-             (selected (remove-if (lambda (molecule)
-                                    (not (position (molecule-name molecule) selected-names :test #'equal)))
-                                  molecules))
-             (atom-matches (funcall molecule-matcher selected)))
-        (dolist (element (cytoscape:elements graph))
-          (let ((molecule (find (element-id element) molecules :key #'molecule-name :test #'equal)))
-            (when (and molecule
-                       (position (element-id element) unselected-names :test #'equal))
-              (setf (cdr (assoc "image" (cytoscape:data element) :test #'string=))
-                    (encode-svg (cando-widgets:sketch-molecule (find (element-id element) molecules :key #'molecule-name :test #'equal)))))
-            (jupyter-widgets:notify-trait-change element :dict :data (cytoscape:data element) (cytoscape:data element) t)))
-        (loop for molecule in selected
-              for atoms in atom-matches
-              for element = (find (molecule-name molecule) (cytoscape:elements graph) :test #'string= :key #'element-id)
-              do (setf (cdr (assoc "image" (cytoscape:data element) :test #'string=))
-                       (encode-svg (cando-widgets:sketch-molecule molecule (generate-stylesheet atoms))))
-              do (jupyter-widgets:notify-trait-change element :dict :data (cytoscape:data element) (cytoscape:data element) t))))))
+    (let ((selected-names (get-selected-names map)))
+      (setf selected-molecules
+            (remove-if (lambda (molecule)
+                         (not (position (molecule-name molecule) selected-names :test #'equal)))
+                       molecules))
+      (when molecule-matcher
+        (let ((atom-matches (funcall molecule-matcher selected-molecules)))
+          (dolist (element (cytoscape:elements graph))
+            (let ((molecule (find (element-id element) molecules :key #'molecule-name :test #'equal)))
+              (when (and molecule
+                         (position (element-id element) unselected-names :test #'equal))
+                (setf (cdr (assoc "image" (cytoscape:data element) :test #'string=))
+                      (encode-svg (cando-widgets:sketch-molecule (find (element-id element) molecules :key #'molecule-name :test #'equal)))))
+              (jupyter-widgets:notify-trait-change element :dict :data (cytoscape:data element) (cytoscape:data element) t)))
+          (loop for molecule in selected-molecules
+                for atoms in atom-matches
+                for element = (find (molecule-name molecule) (cytoscape:elements graph) :test #'string= :key #'element-id)
+                do (setf (cdr (assoc "image" (cytoscape:data element) :test #'string=))
+                         (encode-svg (cando-widgets:sketch-molecule molecule (generate-stylesheet atoms))))
+                do (jupyter-widgets:notify-trait-change element :dict :data (cytoscape:data element) (cytoscape:data element) t)))))))
 
 
 (defun make-molecule-map (container &rest args)
