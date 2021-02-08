@@ -464,33 +464,37 @@
         (auto-view instance)))))
 
 
-(defun add-ligand (instance id ligand)
+(defun ligand-id (ligand)
+  (symbol-name (chem:get-name ligand)))
+
+
+(defun add-ligands (instance &rest ligands)
   (with-slots (stage ligand-representation minimize-button jostle-button angle-slider)
               instance
-    (let ((display (unless ligand "none")))
+    (let ((display (unless ligands "none")))
       (setf (jw:widget-display (jw:widget-layout ligand-representation)) display
             (jw:widget-display (jw:widget-layout minimize-button)) display
             (jw:widget-display (jw:widget-layout jostle-button)) display
             (jw:widget-display (jw:widget-layout angle-slider)) display))
     (dolist (component (ngl:components stage))
       (when (ligandp component)
-        (setf (ngl:visible component) nil)))
-    (when ligand
-      (let ((component (find id (ngl:components stage) :test #'equal :key #'ngl:name)))
-        (cond
-          (component
-            (setf (ngl:visible component) t))
-          (t
-            (setf component (make-instance 'ngl:structure
-                                           :name id
-                                           :value (chem:aggregate-as-mol2-string ligand t)
-                                           :ext "mol2"
-                                           :representations (create-representations)))
-            (update-representations component (jw:widget-value ligand-representation))
-            (setf (gethash id (structures instance)) ligand
-                  (ngl:components stage) (cons component
-                                             (ngl:components stage)))))
-        (auto-view instance)))))
+        (setf (ngl:visible component) (find (ngl:name component) ligands :test #'equal :key #'ligand-id))))
+    (dolist (ligand ligands)
+      (let* ((id (ligand-id ligand))
+             (component (find id (ngl:components stage) :test #'equal :key #'ngl:name)))
+        (unless component
+          (setf component (make-instance 'ngl:structure
+                                         :name id
+                                         :value (let ((agg (chem:make-aggregate (chem:get-name ligand))))
+                                                  (chem:add-matter agg ligand)
+                                                  (chem:aggregate-as-mol2-string agg t))
+                                         :ext "mol2"
+                                         :representations (create-representations)))
+          (update-representations component (jw:widget-value ligand-representation))
+          (setf (gethash id (structures instance)) ligand
+                (ngl:components stage) (cons component
+                                           (ngl:components stage))))))
+    (auto-view instance)))
 
 
 (defun add-template (instance template)

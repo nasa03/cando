@@ -2,7 +2,7 @@
   (:use #:common-lisp)
   (:nicknames :cw)
   (:export
-    #:add-ligand
+    #:add-ligands
     #:add-page
     #:add-receptor
     #:add-template

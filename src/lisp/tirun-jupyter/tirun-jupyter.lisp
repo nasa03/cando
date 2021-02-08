@@ -392,9 +392,7 @@
         ;; Load the sketch
         (setf (jw:widget-value structure) (cw:sketch-molecule mol))
         ;; Show the ligand if it is already in nglview otherwise load it.
-        (let ((agg (chem:make-aggregate (chem:get-name mol))))
-          (chem:add-matter agg mol)
-          (cw:add-ligand (view-ligand-ngl-structure-viewer instance) (molecule-name mol) agg))))))
+        (cw:add-ligands (view-ligand-ngl-structure-viewer instance) mol)))))
 
 
 (defun refresh-ligands-view (instance)
@@ -735,10 +733,7 @@ It will put those multiple ligands into all-ligands and selected-ligands"
     (jw:observe molecule-map :selected-molecules
       (lambda (inst type name old-value new-value source)
         (declare (ignore inst type name old-value source))
-        (dolist (mol new-value)
-          (let ((agg (chem:make-aggregate (chem:get-name mol))))
-            (chem:add-matter agg mol)
-            (cw:add-ligand ngl (molecule-name mol) agg)))))
+        (apply #'cw:add-ligands ngl new-value)))
     (jw:link *workspace* :selected-ligands molecule-map :molecules)
     (jw:link *workspace* :all-edges molecule-map :edges)
     (cw:make-simple-task-page container "Calculate Similarities" #'run-lomap
